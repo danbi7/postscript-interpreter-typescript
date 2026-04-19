@@ -3,14 +3,14 @@ import { OperandStack } from "../core/OperandStack";
 import { PsObject } from "../types/PsObject";
 import { PsDictionary } from "../types/PsObject";
 
-// Command #19:
+// Command #19: Creates a dictionary with given capacity
 export const dict = (opStack: OperandStack): void => {
     const capacityObj = opStack.pop();
+
     if (capacityObj.type !== 'number') {
         throw new Error("TypeCheck: dict capacity must be a number");
     }
 
-    // Push a new dictionary object to the operand stack
     opStack.push({
         type: 'dict',
         value: {
@@ -20,12 +20,13 @@ export const dict = (opStack: OperandStack): void => {
     });
 };
 
-// Command #20:
+// Command #20: Returns length of string or dictionary size
 export const lengthOp = (opStack: OperandStack): void => {
     const obj = opStack.pop();
-    // length works on both strings and dicts [cite: 20, 25]
+
     if (obj.type === 'dict') {
-        opStack.push({ type: 'number', value: (obj.value as PsDictionary).entries.size });
+        const dict = obj.value as PsDictionary;
+        opStack.push({ type: 'number', value: dict.entries.size });
     } else if (obj.type === 'string') {
         opStack.push({ type: 'number', value: (obj.value as string).length });
     } else {
@@ -33,34 +34,39 @@ export const lengthOp = (opStack: OperandStack): void => {
     }
 };
 
-// Command #21:
+// Command #21: Returns dictionary capacity
 export const maxlength = (opStack: OperandStack): void => {
     const obj = opStack.pop();
+
     if (obj.type !== 'dict') {
         throw new Error("TypeCheck: maxlength requires a dict");
     }
-    opStack.push({ type: 'number', value: (obj.value as PsDictionary).capacity });
+
+    const dict = obj.value as PsDictionary;
+    opStack.push({ type: 'number', value: dict.capacity });
 };
 
-// Command #22:
+// Command #22: Pushes dictionary onto dictionary stack
 export const begin = (opStack: OperandStack, dictStack: DictionaryStack): void => {
     const obj = opStack.pop();
+
     if (obj.type !== 'dict') {
         throw new Error("TypeCheck: begin requires a dict");
     }
-    // Push the dictionary onto the dictionary stack
+
     dictStack.push(obj.value as PsDictionary);
 };
 
-// Command #23:
+// Command #23: Pops dictionary stack (cannot remove base dict)
 export const end = (dictStack: DictionaryStack): void => {
-    // Pop the top dictionary from the dictionary stack
-    dictStack.pop(); 
+    if (dictStack.length() <= 1) {
+        throw new Error("Cannot pop base dictionary");
+    }
+    dictStack.pop();
 };
 
-// Command #24:
+// Command #24: Defines a key-value pair in top dictionary
 export const def = (opStack: OperandStack, dictStack: DictionaryStack): void => {
-    // def takes: key value -> - 
     const value = opStack.pop();
     const keyObj = opStack.pop();
 
@@ -68,6 +74,7 @@ export const def = (opStack: OperandStack, dictStack: DictionaryStack): void => 
         throw new Error("TypeCheck: def key must be a name");
     }
 
-    // Associates key and value in current (top) dict 
+    const key = keyObj.value as string;
+
     dictStack.define(keyObj.value as string, value);
 };

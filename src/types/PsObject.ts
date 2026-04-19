@@ -1,19 +1,22 @@
-export type PsValue = 
-  | number 
-  | string 
-  | boolean 
-  | PsObject[]   // For procedures/arrays
+export type PsValue =
+  | number
+  | string
+  | boolean
+  | PsObject[]        // procedure body
   | PsDictionary;
 
-export interface PsObject {
-  // 'name' is the literal /x, 'executable_name' is the command x
-  type: 'number' | 'string' | 'boolean' | 'name' | 'executable_name' | 'procedure' | 'dict' | 'open_proc' | 'close_proc';
-  value: PsValue;
-  // Required for Lexical Scoping: Stores the environment where the proc was defined
-  staticLink?: Map<string, PsObject>[]; 
-}
+export type PsObject =
+  | { type: 'number'; value: number }
+  | { type: 'string'; value: string }
+  | { type: 'boolean'; value: boolean }
+  | { type: 'name'; value: string }
+  | { type: 'executable_name'; value: string }
+  | { type: 'procedure'; value: PsObject[]; staticLink: PsDictionary[] }
+  | { type: 'dict'; value: PsDictionary }
+  | { type: 'open_proc'; value: null }
+  | { type: 'close_proc'; value: null };
 
 export interface PsDictionary {
-  capacity: number; // Required 
+  capacity: number;
   entries: Map<string, PsObject>;
 }

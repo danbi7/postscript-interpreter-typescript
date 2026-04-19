@@ -9,8 +9,8 @@ export class Lexer {
 
     private static classify(token: string): PsObject {
         if (!isNaN(Number(token))) return { type: 'number', value: Number(token) };
-        if (token === '{') return { type: 'open_proc', value: '{' };
-        if (token === '}') return { type: 'close_proc', value: '}' };
+        if (token === '{') return { type: 'open_proc', value: null };
+        if (token === '}') return { type: 'close_proc', value: null };
         if (token === 'true') return { type: 'boolean', value: true };
         if (token === 'false') return { type: 'boolean', value: false };
         if (token.startsWith('/')) return { type: 'name', value: token.substring(1) };

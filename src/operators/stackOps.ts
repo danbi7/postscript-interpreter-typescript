@@ -47,8 +47,7 @@ export const copy = (opStack: OperandStack): void => {
 
     // Push the duplicates back onto the stack in order
     elementsToCopy.forEach((item) => {
-        // Essential: Deep copy or spread may be needed if items are mutable (like dicts/strings)
-        opStack.push({ ...item }); 
+        opStack.push(item);
     });
 }
 
@@ -59,7 +58,7 @@ export const dup = (opStack: OperandStack): void => {
     }
 
     const topElement = opStack.peek(0);
-    opStack.push({ ...topElement})
+    opStack.push(topElement);
 }
 
 // Command #5: Clears the stack
