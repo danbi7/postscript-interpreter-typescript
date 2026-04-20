@@ -1,12 +1,7 @@
 import { OperandStack } from "../core/OperandStack";
 import { PsObject } from "../types/PsObject";
 
-/**
- * Note: These functions require access to your main execution logic 
- * (referred to here as 'interpreter.execute') to process the procedures.
- */
-
-// Command #40: if (bool proc if -)
+// Command #40: Stack: bool proc -> -
 export const ifOp = (opStack: OperandStack, interpreter: any): void => {
     const proc = opStack.pop();
     const condition = opStack.pop();
@@ -16,46 +11,65 @@ export const ifOp = (opStack: OperandStack, interpreter: any): void => {
     }
 
     if (condition.value === true) {
-        // Execute each token inside the procedure
-        (proc.value as PsObject[]).forEach(token => interpreter.execute(token));
+        interpreter.execute(proc.value as PsObject[]);
     }
 };
 
-// Command #41: ifelse (bool proc1 proc2 ifelse -)
+// Command #41: Stack: bool proc1 proc2 -> -
 export const ifelseOp = (opStack: OperandStack, interpreter: any): void => {
-    const proc2 = opStack.pop(); // false block 
-    const proc1 = opStack.pop(); // true block 
+    const proc2 = opStack.pop(); // false branch
+    const proc1 = opStack.pop(); // true branch
     const condition = opStack.pop();
 
-    if (condition.type !== 'boolean') throw new Error("TypeCheck: ifelse requires boolean");
+    if (
+        condition.type !== 'boolean' ||
+        proc1.type !== 'procedure' ||
+        proc2.type !== 'procedure'
+    ) {
+        throw new Error("TypeCheck: ifelse requires [boolean] [procedure] [procedure]");
+    }
 
-    const procToExecute = condition.value === true ? proc1 : proc2;
-    (procToExecute.value as PsObject[]).forEach(token => interpreter.execute(token));
+    const selected = condition.value === true ? proc1 : proc2;
+    interpreter.execute(selected.value as PsObject[]);
 };
 
-// Command #42: for (init step limit proc for -)
+// Command #42 Stack: init step limit proc -> -
 export const forOp = (opStack: OperandStack, interpreter: any): void => {
     const proc = opStack.pop();
     const limit = opStack.pop();
     const step = opStack.pop();
     const init = opStack.pop();
 
-    if (init.type !== 'number' || step.type !== 'number' ||
-        limit.type !== 'number' || proc.type !== 'procedure') {
+    if (
+        init.type !== 'number' ||
+        step.type !== 'number' ||
+        limit.type !== 'number' ||
+        proc.type !== 'procedure'
+    ) {
         throw new Error("TypeCheck: for requires [num] [num] [num] [procedure]");
     }
 
-    const s = step.value as number;
-    const l = limit.value as number;
+    const start = init.value as number;
+    const inc = step.value as number;
+    const end = limit.value as number;
 
-    for (let i = init.value as number; (s > 0 ? i <= l : i >= l); i += s) {
-        // PostScript 'for' pushes the current index to the stack before each iteration
+    if (inc === 0) {
+        throw new Error("RangeCheck: step cannot be zero");
+    }
+
+    for (
+        let i = start;
+        inc > 0 ? i <= end : i >= end;
+        i += inc
+    ) {
+        // push loop variable each iteration (PostScript behavior)
         opStack.push({ type: 'number', value: i });
-        (proc.value as PsObject[]).forEach(token => interpreter.execute(token));
+
+        interpreter.execute(proc.value as PsObject[]);
     }
 };
 
-// Command #43: repeat (n proc repeat -)
+// Command #43: Stack: n proc -> -
 export const repeat = (opStack: OperandStack, interpreter: any): void => {
     const proc = opStack.pop();
     const n = opStack.pop();
@@ -65,12 +79,17 @@ export const repeat = (opStack: OperandStack, interpreter: any): void => {
     }
 
     const count = n.value as number;
+
+    if (count < 0) {
+        throw new Error("RangeCheck: repeat count must be non-negative");
+    }
+
     for (let i = 0; i < count; i++) {
-        (proc.value as PsObject[]).forEach(token => interpreter.execute(token));
+        interpreter.execute(proc.value as PsObject[]);
     }
 };
 
-// Command #44: Terminate interpreter
-export const quit = (opStack: OperandStack): void => {
-
+// Command #44:Terminates interpreter execution
+export const quit = (): void => {
+    process.exit(0);
 };
