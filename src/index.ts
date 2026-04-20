@@ -17,8 +17,7 @@ const run = (psCode: string, useLexical: boolean = false) => {
 };
 
 // Example PostScript program from your requirements
-// const code = "/x 10 def /f { x = } def /x 20 def f";
-const code = "/x 10 def ="
+const code = "/x 10 def /f { x = } def /x 20 def x =";
 
 console.log("--- Dynamic Scoping (Default) ---");
 run(code, false); // Expected: 20
