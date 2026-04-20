@@ -1,6 +1,6 @@
 import { OperandStack } from "./OperandStack";
 import { DictionaryStack } from "./DictionaryStack";
-import { PsObject } from "../types/PsObject";
+import { PsObject, PsDictionary } from "../types/PsObject";
 
 export class Interpreter {
     opStack: OperandStack;
@@ -22,7 +22,7 @@ export class Interpreter {
         this.isLexical = lexical;
     }
 
-    execute(tokens: PsObject[]): void {
+    execute(tokens: PsObject[], staticLink?: PsDictionary[]): void {
         let i = 0;
         while (i < tokens.length) {
             const token = tokens[i];
@@ -39,7 +39,11 @@ export class Interpreter {
                     i++;
                 }
                 // Push the procedure block to the operand stack (Command #40, 41)
-                this.opStack.push({ type: 'procedure', value: procTokens });
+                this.opStack.push({
+                    type: 'procedure',
+                    value: procTokens,
+                    staticLink: [...this.dictStack['items']]
+                });
                 continue; // Move to the next token after the closing '}'
             }
 
@@ -51,10 +55,9 @@ export class Interpreter {
                     this.operators[name](this.opStack, this.dictStack, this);
                 }
                 else {
-                    const found = this.dictStack.lookup(name);
-                    if (found?.type === 'procedure') {
-                        this.execute(found.value as PsObject[]);
-                    } else if (found) {
+                    const found = this.dictStack.lookupDynamic(name);
+
+                    if (found) {
                         this.opStack.push(found);
                     } else {
                         throw new Error(`Undefined: ${name}`);

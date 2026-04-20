@@ -9,6 +9,7 @@ const run = (psCode: string, useLexical: boolean = false) => {
 
     try {
         const tokens = Lexer.tokenize(psCode);
+        console.log(tokens);
         interpreter.execute(tokens);
     } catch (error) {
         console.error("Runtime Error:", error);
@@ -16,7 +17,7 @@ const run = (psCode: string, useLexical: boolean = false) => {
 };
 
 // Example PostScript program from your requirements
-const code = "/x 10 def /f { x = } def /x 20 def f";
+const code = "/x 10 def /f { x = } def /x 20 def x =";
 
 console.log("--- Dynamic Scoping (Default) ---");
 run(code, false); // Expected: 20

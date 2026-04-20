@@ -5,9 +5,9 @@ export const print = (opStack: OperandStack): void => {
     if (opStack.isEmpty()) {
         throw new Error("StackUnderflow: print requires one operand.");
     }
-    
-    // Peek first to check type, as PostScript print expects a string 
-    const obj = opStack.peek();
+
+    const obj = opStack.pop();
+
     if (obj.type !== 'string') {
         throw new Error("TypeCheck: print requires a string.");
     }
@@ -22,7 +22,7 @@ export const popPrint = (opStack: OperandStack): void => {
     }
 
     const obj = opStack.pop();
-    console.log(obj.value.toString());
+    console.log(String(obj.value));
 };
 
 // Command #47: Like = but prints PostScript representation (e.g. "hello" prints as (hello))
@@ -30,16 +30,27 @@ export const popPrintPs = (opStack: OperandStack): void => {
     if (opStack.isEmpty()) {
         throw new Error("StackUnderflow: == requires one operand.");
     }
-    
+
     const obj = opStack.pop();
 
-    if (obj.type === 'string') {
-        console.log(`(${obj.value})`);
-    } else if (obj.type === 'procedure') {
-        console.log(`{ ...procedure... }`);
-    } else if (obj.type === 'name') {
-        console.log(`/${obj.value}`);
-    } else {
-        console.log(obj.value.toString());
+    switch (obj.type) {
+        case 'string':
+            console.log(`(${obj.value})`);
+            break;
+
+        case 'name':
+            console.log(`/${obj.value}`);
+            break;
+
+        case 'procedure':
+            console.log('{ ... }');
+            break;
+
+        case 'dict':
+            console.log('<<dict>>');
+            break;
+
+        default:
+            console.log(String(obj.value));
     }
 };

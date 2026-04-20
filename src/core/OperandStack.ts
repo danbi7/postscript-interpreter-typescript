@@ -29,4 +29,8 @@ export class OperandStack {
     length(): number {
         return this.items.length
     }
+
+    getItems(): PsObject[] {
+        return this.items;
+    }
 }
