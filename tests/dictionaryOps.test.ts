@@ -71,12 +71,12 @@ describe("dictionaryOps.ts Tests", () => {
             const d = createDictObj(5);
             opStack.push(d);
             begin(opStack, dictStack);
-            end(dictStack);
+            end(opStack, dictStack);
             expect(dictStack.length()).toBe(1); // Only base dict remains
         });
 
         it("should throw error when trying to pop the base dictionary", () => {
-            expect(() => end(dictStack)).toThrow("Cannot pop base dictionary");
+            expect(() => end(opStack, dictStack)).toThrow("Cannot pop base dictionary");
         });
     });
 

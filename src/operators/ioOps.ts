@@ -12,7 +12,7 @@ export const print = (opStack: OperandStack): void => {
         throw new Error("TypeCheck: print requires a string.");
     }
 
-    console.log(obj.value as string);
+    process.stdout.write(obj.value as string);
 };
 
 // Command #46: Writes text representation of any to stdout and pops it

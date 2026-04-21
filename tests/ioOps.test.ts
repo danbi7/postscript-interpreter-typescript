@@ -5,15 +5,18 @@ import { print, popPrint, popPrintPs } from "../src/operators/ioOps";
 describe("ioOps.ts Tests", () => {
     let opStack: OperandStack;
     let consoleSpy: jest.SpyInstance;
+    let stdoutSpy: jest.SpyInstance;
 
     beforeEach(() => {
         opStack = new OperandStack();
-        // Spy on console.log and suppress actual terminal output during tests
         consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        // print uses process.stdout.write (no newline, per PostScript spec)
+        stdoutSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     });
 
     afterEach(() => {
         consoleSpy.mockRestore();
+        stdoutSpy.mockRestore();
     });
 
     const createObj = (val: any, type: PsObject['type']): PsObject => ({
@@ -22,10 +25,10 @@ describe("ioOps.ts Tests", () => {
     } as PsObject);
 
     describe("print", () => {
-        it("should log string value to console", () => {
+        it("should write string to stdout without newline (PostScript spec)", () => {
             opStack.push(createObj("Hello World", "string"));
             print(opStack);
-            expect(consoleSpy).toHaveBeenCalledWith("Hello World");
+            expect(stdoutSpy).toHaveBeenCalledWith("Hello World");
             expect(opStack.length()).toBe(0);
         });
 
