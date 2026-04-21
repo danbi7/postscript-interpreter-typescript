@@ -23,7 +23,7 @@ A fully functional PostScript interpreter written in TypeScript, supporting all 
 
 ```bash
 # Clone and install dependencies
-git clone <your-repo-url>
+git clone https://github.com/danbi7/postscript-interpreter-typescript.git
 cd postscript-interpreter-typescript
 npm install
 ```
