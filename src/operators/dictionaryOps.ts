@@ -58,7 +58,7 @@ export const begin = (opStack: OperandStack, dictStack: DictionaryStack): void =
 };
 
 // Command #23: Pops dictionary stack (cannot remove base dict)
-export const end = (dictStack: DictionaryStack): void => {
+export const end = (opStack: OperandStack, dictStack: DictionaryStack): void => {
     if (dictStack.length() <= 1) {
         throw new Error("Cannot pop base dictionary");
     }

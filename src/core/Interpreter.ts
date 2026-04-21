@@ -5,17 +5,11 @@ import { PsObject, PsDictionary } from "../types/PsObject";
 export class Interpreter {
     opStack: OperandStack;
     dictStack: DictionaryStack;
-    isLexical: boolean = false; // Default scoping
+    isLexical: boolean = false;
 
     constructor() {
         this.opStack = new OperandStack();
         this.dictStack = new DictionaryStack();
-
-        // Initial system dictionary
-        this.dictStack.push({
-            capacity: 100,
-            entries: new Map<string, PsObject>()
-        });
     }
 
     setScoping(lexical: boolean) {
@@ -27,7 +21,6 @@ export class Interpreter {
         while (i < tokens.length) {
             const token = tokens[i];
 
-            // CHECK TYPE FIRST: Is it the start of a procedure?
             if (token.type === 'open_proc') {
                 const procTokens: PsObject[] = [];
                 let depth = 1;
@@ -38,33 +31,43 @@ export class Interpreter {
                     if (depth > 0) procTokens.push(tokens[i]);
                     i++;
                 }
-                // Push the procedure block to the operand stack (Command #40, 41)
+                // Capture the current dict stack snapshot as the static link (closure)
                 this.opStack.push({
                     type: 'procedure',
                     value: procTokens,
-                    staticLink: [...this.dictStack['items']]
+                    staticLink: [...this.dictStack.getStack()]
                 });
-                continue; // Move to the next token after the closing '}'
+                continue;
             }
 
-            // Handle normal execution
             if (token.type === 'executable_name') {
                 const name = token.value as string;
                 if (this.operators[name]) {
-                    // FIX: Pass BOTH stacks to the operator functions
                     this.operators[name](this.opStack, this.dictStack, this);
-                }
-                else {
-                    const found = this.dictStack.lookupDynamic(name);
+                } else {
+                    let found: PsObject | undefined;
+                    if (this.isLexical && staticLink) {
+                        found = this.dictStack.lookupStatic(name, staticLink);
+                    } else {
+                        found = this.dictStack.lookupDynamic(name);
+                    }
 
                     if (found) {
-                        this.opStack.push(found);
+                        if (found.type === 'procedure') {
+                            if (this.isLexical) {
+                                // Execute in the procedure's captured lexical environment
+                                this.execute(found.value as PsObject[], found.staticLink);
+                            } else {
+                                this.execute(found.value as PsObject[]);
+                            }
+                        } else {
+                            this.opStack.push(found);
+                        }
                     } else {
                         throw new Error(`Undefined: ${name}`);
                     }
                 }
-            }
-            else if (token.type !== 'close_proc') {
+            } else if (token.type !== 'close_proc') {
                 this.opStack.push(token);
             }
             i++;
@@ -73,54 +76,61 @@ export class Interpreter {
 
     private operators: Record<string, Function> = {
         // Stack
-        "exch": require("../operators/stackOps").exch,
-        "pop": require("../operators/stackOps").pop,
-        "copy": require("../operators/stackOps").copy,
-        "dup": require("../operators/stackOps").dup,
-        "clear": require("../operators/stackOps").clear,
-        "count": require("../operators/stackOps").count,
+        "exch":      require("../operators/stackOps").exch,
+        "pop":       require("../operators/stackOps").pop,
+        "copy":      require("../operators/stackOps").copy,
+        "dup":       require("../operators/stackOps").dup,
+        "clear":     require("../operators/stackOps").clear,
+        "count":     require("../operators/stackOps").count,
 
         // Arithmetic
-        "add": require("../operators/arithmeticOps").add,
-        "sub": require("../operators/arithmeticOps").sub,
-        "mul": require("../operators/arithmeticOps").mul,
-        "div": require("../operators/arithmeticOps").div,
-        "idiv": require("../operators/arithmeticOps").idiv,
-        "mod": require("../operators/arithmeticOps").mod,
-        "abs": require("../operators/arithmeticOps").abs,
-        "neg": require("../operators/arithmeticOps").neg,
-        "ceiling": require("../operators/arithmeticOps").ceiling,
-        "floor": require("../operators/arithmeticOps").floor,
-        "round": require("../operators/arithmeticOps").round,
-        "sqrt": require("../operators/arithmeticOps").sqrt,
+        "add":       require("../operators/arithmeticOps").add,
+        "sub":       require("../operators/arithmeticOps").sub,
+        "mul":       require("../operators/arithmeticOps").mul,
+        "div":       require("../operators/arithmeticOps").div,
+        "idiv":      require("../operators/arithmeticOps").idiv,
+        "mod":       require("../operators/arithmeticOps").mod,
+        "abs":       require("../operators/arithmeticOps").abs,
+        "neg":       require("../operators/arithmeticOps").neg,
+        "ceiling":   require("../operators/arithmeticOps").ceiling,
+        "floor":     require("../operators/arithmeticOps").floor,
+        "round":     require("../operators/arithmeticOps").round,
+        "sqrt":      require("../operators/arithmeticOps").sqrt,
 
         // Dictionary
-        "dict": require("../operators/dictionaryOps").dict,
-        "length": require("../operators/dictionaryOps").lengthOp,
-        "maxlength": require("../operators/dictionaryOps").maxlength,
-        "begin": require("../operators/dictionaryOps").begin,
-        "end": require("../operators/dictionaryOps").end,
-        "def": require("../operators/dictionaryOps").def, // Ensure this function takes (opStack, dictStack)
+        "dict":        require("../operators/dictionaryOps").dict,
+        "length":      require("../operators/dictionaryOps").lengthOp,
+        "maxlength":   require("../operators/dictionaryOps").maxlength,
+        "begin":       require("../operators/dictionaryOps").begin,
+        "end":         require("../operators/dictionaryOps").end,
+        "def":         require("../operators/dictionaryOps").def,
 
-        // Strings & Booleans
-        "get": require("../operators/stringOps").get,
-        "getinterval": require("../operators/stringOps").getinterval,
-        "putinterval": require("../operators/stringOps").putinterval,
-        "eq": require("../operators/booleanOps").eq,
-        "ne": require("../operators/booleanOps").ne,
-        "ge": require("../operators/booleanOps").ge,
-        "gt": require("../operators/booleanOps").gt,
-        "le": require("../operators/booleanOps").le,
-        "lt": require("../operators/booleanOps").lt,
+        // Strings
+        "get":           require("../operators/stringOps").get,
+        "getinterval":   require("../operators/stringOps").getinterval,
+        "putinterval":   require("../operators/stringOps").putinterval,
+
+        // Boolean
+        "eq":    require("../operators/booleanOps").eq,
+        "ne":    require("../operators/booleanOps").ne,
+        "ge":    require("../operators/booleanOps").ge,
+        "gt":    require("../operators/booleanOps").gt,
+        "le":    require("../operators/booleanOps").le,
+        "lt":    require("../operators/booleanOps").lt,
+        "and":   require("../operators/booleanOps").and,
+        "or":    require("../operators/booleanOps").or,
+        "not":   require("../operators/booleanOps").not,
+        "true":  require("../operators/booleanOps").trueOp,
+        "false": require("../operators/booleanOps").falseOp,
 
         // Flow & I/O
-        "if": require("../operators/flowOps").ifOp,
-        "ifelse": require("../operators/flowOps").ifelseOp,
-        "for": require("../operators/flowOps").forOp,
-        "repeat": require("../operators/flowOps").repeat,
-        "quit": () => process.exit(0),
-        "print": require("../operators/ioOps").print,
-        "=": require("../operators/ioOps").popPrint,
-        "==": require("../operators/ioOps").popPrintPs,
+        "if":      require("../operators/flowOps").ifOp,
+        "ifelse":  require("../operators/flowOps").ifelseOp,
+        "for":     require("../operators/flowOps").forOp,
+        "repeat":  require("../operators/flowOps").repeat,
+        "quit":    () => process.exit(0),
+        "print":   require("../operators/ioOps").print,
+        "=":       require("../operators/ioOps").popPrint,
+        "==":      require("../operators/ioOps").popPrintPs,
     };
 }
